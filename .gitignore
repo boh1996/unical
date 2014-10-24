@@ -57,3 +57,4 @@ target/
 *.sublime-*
 
 .tmp/
+node_modules/
