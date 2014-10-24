@@ -1,4 +1,3 @@
-Unical
-======
+# unical
 
-Universal Calendar
+a [Sails](http://sailsjs.org) application
