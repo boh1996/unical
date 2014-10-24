@@ -2,6 +2,8 @@ var cheerio = require('cheerio');
 var request = require('request');
 var datetime = require('datetimejs');
 var regex = require('named-regexp').named;
+var moment = require('moment');
+// moment().format(); <-- What does it even do??
 
 function get ( url, week, year ) {
 	request(url, function ( error, response, body ) {
@@ -68,9 +70,11 @@ function parse_data ( response, week, year ) {
 
 	$(header_rows).each( function ( index, element ) {
 		element = $(element);
-		console.log(element.text().trim());
+
 		var header_groups = header_regex.exec(element.text().trim());
-		console.log(header_groups);
+		if ( header_groups == null ) {
+			header_groups = header_regex.exec(element.text().trim()); // The bullshit level on this one is absurd
+		}
 		var header_year = year;
 
 		if ( header_groups != null && header_groups.length > 0 ) {
@@ -80,7 +84,7 @@ function parse_data ( response, week, year ) {
 
 			headers.push({
 				"day" : header_groups.capture("day_name"),
-				"date" :  datetime.strptime( zero_padding(header_groups.capture("day")) + "-" + zero_padding(header_groups.capture("month")) + "-" + header_year + " 12:00" % (zero_padding(header_groups.capture("day")), zero_padding(header_groups.capture("month")), header_year, "12:00"), "%d-%m-%Y %H:%M")
+				"date" :  datetime.strptime( zero_padding(header_groups.capture("day")) + "-" + zero_padding(header_groups.capture("month")) + "-" + header_year + " 12:00", "%d-%m-%Y %H:%M")
 			});
 		}
 	} );
@@ -143,11 +147,11 @@ function parse_data ( response, week, year ) {
 			event_type = "other";
 			var event_match = null;
 			event_expressions.forEach( function ( expression, expression_index ) {
-				console.log(expression_index);
-				event_match = expression.expression.exec(day_timetable_element.attr("href"));
+				var match = expression.expression.exec(day_timetable_element.attr("href"));
 
-				if ( event_match != null && Object.keys(event_match.captures).length > 0 ) {
+				if ( match != null && Object.keys(match.captures).length > 0 ) {
 					event_type = expression.type;
+					event_match = match;
 				}
 			} );
 
@@ -186,6 +190,10 @@ function parse_data ( response, week, year ) {
 			var title_text = day_timetable_element.attr("title");
 			var time_match = time_regex.exec(title_text);
 
+			if ( time_match == null ) {
+				time_match = time_regex.exec(title_text); // The bullshit level on this one is absurd
+			}
+
 			// Split the title into sections
 			var main_sections = title_text.split("\n\n");
 
@@ -206,8 +214,9 @@ function parse_data ( response, week, year ) {
 			}
 
 			if ( time_match.length > 0 ) {
-				var start_time = datetime.strptime([time_match.capture("start_hour"),time_match.capture("start_minute"), day_of_week, time_week, year].join(" "),"%H %M %w %W %Y");
-				var end_time = datetime.strptime([time_match.capture("end_hour"),time_match.capture("end_minute"), day_of_week, time_week, year].join(" "),"%H %M %w %W %Y");
+				var start_time = moment(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("start_hour") + ":" + time_match.capture("start_minute"));
+				var end_time = moment(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("end_hour") + ":" + time_match.capture("end_minute"));
+
 			} else {
 				var date_sections = top_section[0 + is_changed_or_cancelled].split(" ");
 				var start_date_section = 0;
@@ -234,6 +243,7 @@ function parse_data ( response, week, year ) {
 
 				var start_time = datetime.strptime([zero_padding(alternative_start_day_match.capture("day")),zero_padding(alternative_start_day_match.capture("month")),alternative_start_day_match.capture("year"),start_time_section.trim()].join(" "),"%d/%m-%Y %H:%M");
 				var end_time = datetime.strptime([zero_padding(alternative_end_day_match.capture("day")),zero_padding(alternative_end_day_match.capture("month")),alternative_end_day_match.capture("year"),end_time_section.trim()].join(" "),"%d/%m-%Y %H:%M");
+
 			}
 
 			var room_text = "";
@@ -287,6 +297,8 @@ function parse_data ( response, week, year ) {
 							event_status = "cancelled"
 						}
 
+						console.log(teams);
+
 						timetable_elements.push({
 							"text" : day_timetable_element.text(),
 							"activity_id" : event_match.capture("activity_id"),
@@ -294,10 +306,10 @@ function parse_data ( response, week, year ) {
 							"end_time" : end_time,
 							"event_type" : event_type,
 							"school_id" : event_match.capture("school_id"),
-							"staus" : event_status,
+							"status" : event_status,
 							"teachers" : teachers,
 							"teams" : teams,
-							"location_text" : status_div.text(),
+							"location_text" : status_div.text().trim(),
 							"room_text" : room_text
 						});
 					break;
@@ -310,9 +322,9 @@ function parse_data ( response, week, year ) {
 }
 
 function same_day ( date, day_of_week, week, year ) {
-	var day_two = datetime.strptime("12 00" + day_of_week + " " + week + " " + year,"%H %M %w %W %Y");
-	
-	return day_two.date() == date.date();
+	var day_two = moment(year+"-W" + week + "-" + day_of_week + " 12:00");
+
+	return day_two.isSame(date, 'day');
 }
 
 get("https://www.lectio.dk/lectio/517/SkemaNy.aspx?type=elev&elevid=4789793691&week=412014",41, 2014);
