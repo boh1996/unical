@@ -34,7 +34,8 @@ module.exports.routes = {
 
   '/': {
     view: 'homepage'
-  }
+  },
+  'get /lectio/:branch/:section/:year': 'LectioController.timetable'
 
   /***************************************************************************
   *                                                                          *
