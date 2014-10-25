@@ -3,6 +3,7 @@ var request = require('request');
 var datetime = require('datetimejs');
 var regex = require('named-regexp').named;
 var moment = require('moment');
+var momenttimezone = require('moment-timezone');
 // moment().format(); <-- What does it even do??
 
 // Adds a leading zero to numbers less than 10, to ensure the right format for dates and months,
@@ -31,18 +32,18 @@ module.exports = {
 	},
 
 	// Retrives the data, and calls the parse_data function of this service
-	get : function ( school_id, user_id, year, week ) {
+	get : function ( school_id, user_id, term, week ) {
 
-		url = this.construct_url(week, year, user_id, school_id);
+		url = this.construct_url(week, term, user_id, school_id);
 
 		request({
 			"url": url,
 			"headers": {
-				"s$m$ChooseTerm$term": year
+				"s$m$ChooseTerm$term": term
 			}
 		}, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				LectioTimetable.parse_data(body, week, year, user_id, school_id);
+				LectioTimetable.parse_data(body, week, term, user_id, school_id);
 			} else {
 				// Error...
 			}
@@ -50,7 +51,13 @@ module.exports = {
 	},
 
 	// Parses the retrieves Lectio data
-	parse_data : function ( response, week, year, user_id, school_id ) {
+	parse_data : function ( response, week, term, user_id, school_id ) {
+		if ( week < 30 ) {
+			var year = parseInt(term) + 1;
+		} else {
+			var year = term;
+		}
+
 		$ = cheerio.load(response);
 
 		// If this table doesn't exist, an error occured while recieving data
@@ -145,7 +152,7 @@ module.exports = {
 				// Add the header to the list, with dayname and the date
 				headers.push({
 					"day" : header_groups.capture("day_name"),
-					"date" :  datetime.strptime( zero_padding(header_groups.capture("day")) + "-" + zero_padding(header_groups.capture("month")) + "-" + header_year + " 12:00", "%d-%m-%Y %H:%M")
+					"date" :  moment.tz(header_year + "-" + zero_padding(header_groups.capture("month")) + "-" + zero_padding(header_groups.capture("day")) + " 12:00", "Europe/Copenhagen")
 				});
 			}
 		} );
@@ -185,12 +192,11 @@ module.exports = {
 
 			//
 			var day_timetable_elements = day.find("a");
-			console.log(day_timetable_elements.length);
 
 			module_index = 1;
 
 			// Holidays
-			day.find(".s2module-bg").each( function ( holiday_index , holiday_element ) {
+			/*day.find(".s2module-bg").each( function ( holiday_index , holiday_element ) {
 				holiday_element = $(holiday_element)
 				if ( $(holiday_element).hasClass("s2time-off") ) {
 					holiday_elements.push({
@@ -200,7 +206,7 @@ module.exports = {
 				}
 
 				module_index = module_index + 1
-			} );
+			} );*/
 
 			// Timetable Elements
 			$(day_timetable_elements).each( function ( timetable_index, day_timetable_element ) {
@@ -287,8 +293,8 @@ module.exports = {
 
 				// Match the event times, from the text using regex
 				if ( time_match.length > 0 ) {
-					var start_time = moment(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("start_hour") + ":" + time_match.capture("start_minute"));
-					var end_time = moment(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("end_hour") + ":" + time_match.capture("end_minute"));
+					var start_time = moment.tz(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("start_hour") + ":" + time_match.capture("start_minute"), "Europe/Copenhagen");
+					var end_time = moment.tz(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("end_hour") + ":" + time_match.capture("end_minute"), "Europe/Copenhagen");
 
 				} else {
 					// Grap the different time, from the text sections
@@ -316,8 +322,8 @@ module.exports = {
 					var alternative_start_day_match = alternative_day_regex.exec(start_date_section.trim());
 					var alternative_end_day_match = alternative_day_regex.exec(end_date_section.trim());
 
-					var start_time = datetime.strptime([zero_padding(alternative_start_day_match.capture("day")),zero_padding(alternative_start_day_match.capture("month")),alternative_start_day_match.capture("year"),start_time_section.trim()].join(" "),"%d/%m-%Y %H:%M");
-					var end_time = datetime.strptime([zero_padding(alternative_end_day_match.capture("day")),zero_padding(alternative_end_day_match.capture("month")),alternative_end_day_match.capture("year"),end_time_section.trim()].join(" "),"%d/%m-%Y %H:%M");
+					var start_time = moment.tz(alternative_start_day_match.capture("year") + "-" + zero_padding(alternative_start_day_match.capture("month")) + "-" + zero_padding(alternative_start_day_match.capture("day")) + " " + start_time_section.trim(), "Europe/Copenhagen");
+					var end_time = moment.tz(alternative_end_day_match.capture("year") + "-" + zero_padding(alternative_end_day_match.capture("month")) + zero_padding(alternative_end_day_match.capture("day")) + " " + end_time_section.trim(), "Europe/Copenhagen");
 
 				}
 
@@ -407,6 +413,8 @@ module.exports = {
 				}
 			} );
 		} );
+
+		console.log( week, year );
 		
 		// Remove Existing
 		Lectio.destroy({
