@@ -29,7 +29,8 @@ module.exports = {
 					location: 		event.location_text.trim()
 				});
 			});
-
+			res.setHeader('Content-Type', 'text/calendar');
+			res.setHeader('Content-Disposition', 'attachment; filename="calendar.ics"');
 			return res.send(cal.toString().replace('\n', '\r\n'));
 		});
 	},
