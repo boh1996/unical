@@ -24,13 +24,13 @@ module.exports = {
 				cal.addEvent({
 					start: 			event.start_time,
 					end: 			event.end_time,
-					summary: 		event.text,
-					description: 	event.text,
-					location: 		event.location_text
+					summary: 		event.text.trim(),
+					description: 	event.text.trim(),
+					location: 		event.location_text.trim()
 				});
 			});
 
-			return res.send(cal.toString());
+			return res.send(cal.toString().replace('\n', '\r\n'));
 		});
 	},
 
