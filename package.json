@@ -2,11 +2,16 @@
   "name": "unical",
   "private": true,
   "version": "0.0.0",
-  "description": "a Sails application",
+  "description": "Universal Calendar Importer",
   "keywords": [],
   "dependencies": {
     "ejs": "~0.8.4",
     "grunt": "0.4.2",
+    "cheerio": "~0.17.0",
+    "request": "~2.46.0",
+    "datetimejs": "~0.3.4",
+    "named-regexp": "~0.1.1",
+    "ical-generator": "~0.1.9",
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-coffee": "~0.10.1",
     "grunt-contrib-concat": "~0.3.0",
@@ -31,8 +36,8 @@
   "main": "app.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/anonymous node/sails user/unical.git"
+    "url": "https://github.com/boh1996/unical.git"
   },
-  "author": "anonymous node/sails user",
-  "license": ""
+  "author": "Illution",
+  "license": "MIT License"
 }
