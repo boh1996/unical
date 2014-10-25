@@ -342,10 +342,18 @@ module.exports = {
 
 				// Only insert if the current day is the events starting day
 				if ( same_day(start_time, day_of_week, time_week, year) ) {
+					var text = "";
+
+					$(day_timetable_element).find("span").each( function ( text_span_index, text_span_element ) {
+						text = text + " " + $(text_span_element).text().trim();
+					} );
+
+					text = text.trim();
+
 					switch ( event_type ) {
 						case "private":
 							timetable_elements.push({
-								"text" : day_timetable_element.text().trim(),
+								"text" : text,
 								"activity_id" : event_match.capture("activity_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -359,7 +367,7 @@ module.exports = {
 
 						case "outgoing_censor":
 							timetable_elements.push({
-								"text" : day_timetable_element.text().trim(),
+								"text" : text,
 								"activity_id" : event_match.capture("outbound_censor_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -373,7 +381,7 @@ module.exports = {
 
 						case "exam":
 							timetable_elements.push({
-								"text" : day_timetable_element.text().trim(),
+								"text" : text,
 								"test_team_id" : event_match.capture("test_team_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -395,7 +403,7 @@ module.exports = {
 							}
 
 							timetable_elements.push({
-								"text" : day_timetable_element.text().trim(),
+								"text" : text,
 								"activity_id" : event_match.capture("activity_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -415,8 +423,6 @@ module.exports = {
 				}
 			} );
 		} );
-
-		console.log( week, year );
 		
 		// Remove Existing
 		Lectio.destroy({
@@ -429,7 +435,7 @@ module.exports = {
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
 				Lectio.create(timetable_insert_element).exec(function createCB(err,created){
-	  				//console.log('Created event ' + created.activity_id);
+	  				console.log('Created event ' + created.activity_id);
 	  			});
 			});
   		});
