@@ -31,12 +31,12 @@ module.exports = {
 	},
 
 	// Retrives the data, and calls the parse_data function of this service
-	get : function ( week, year, user_id, school_id ) {
+	get : function ( school_id, user_id, year, week ) {
 		url = this.construct_url(week, year, user_id, school_id);
 
 		request(url, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				parse_data(body, week, year, user_id, school_id);
+				LectioTimetable.parse_data(body, week, year, user_id, school_id);
 			} else {
 				// Error...
 			}
@@ -316,6 +316,9 @@ module.exports = {
 					var room = top_section[3 + is_changed_or_cancelled].replace("Lokale: ", "").replace("r:", "");
 				}
 
+				start_time = start_time.toDate();
+				end_time = end_time.toDate();
+
 				// Only insert if the current day is the events starting day
 				if ( same_day(start_time, day_of_week, time_week, year) ) {
 					switch ( event_type ) {
@@ -398,11 +401,15 @@ module.exports = {
 			"year" : year,
 			"user_id" : user_id,
 			"school_id" : school_id
-		});
-
-		// Insert the new
-		timetable_elements.forEach( function ( timetable_element_index, timetable_insert_element ) {
-			Lectio.create(timetable_insert_element);
-		} );
+		}).exec(function deleteCB(err){
+  			console.log('The record has been deleted');
+  			// Insert the new
+			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
+				console.log(timetable_insert_element);
+				Lectio.create(timetable_insert_element).exec(function createCB(err,created){
+	  				console.log('Created event ' + created.activity_id);
+	  			});
+			});
+  		});
 	}
 }
