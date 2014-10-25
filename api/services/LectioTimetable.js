@@ -412,8 +412,8 @@ module.exports = {
 								"status" : event_status,
 								"teachers" : teachers,
 								"teams" : teams,
-								"location_text" : status_div.text().trim(),
-								"room_text" : room_text.trim(),
+								"location_text" : status_div.text().trim().replace("\n", ""),
+								"room_text" : room_text.trim().replace("\n", ""),
 								"week" : week,
 								"year" : year,
 								"user_id" : user_id
