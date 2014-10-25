@@ -176,19 +176,21 @@ module.exports = {
 
 			index = index + 1;
 
-			day_of_week = index;
+			day_of_week = index -1;
 
-			// Sunday is zero
+			/*// Sunday is zero
 			if ( day_of_week == 7 ) {
 				day_of_week = 0;
-			}
+			}*/
+
+			time_week = week;
 
 			// If the week is the first week of the year, its 0 in the calendar and 01 on Lectios
-			if ( week == 1 ) {
+			/*if ( week == 1 ) {
 				time_week = 0;
 			} else {
 				time_week = week - 1;
-			}
+			}*/
 
 			//
 			var day_timetable_elements = day.find("a");
@@ -427,7 +429,7 @@ module.exports = {
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
 				Lectio.create(timetable_insert_element).exec(function createCB(err,created){
-	  				console.log('Created event ' + created.activity_id);
+	  				//console.log('Created event ' + created.activity_id);
 	  			});
 			});
   		});
