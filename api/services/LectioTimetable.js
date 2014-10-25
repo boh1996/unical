@@ -32,9 +32,15 @@ module.exports = {
 
 	// Retrives the data, and calls the parse_data function of this service
 	get : function ( school_id, user_id, year, week ) {
+
 		url = this.construct_url(week, year, user_id, school_id);
 
-		request(url, function ( error, response, body ) {
+		request({
+			"url": url,
+			"headers": {
+				"s$m$ChooseTerm$term": year
+			}
+		}, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
 				LectioTimetable.parse_data(body, week, year, user_id, school_id);
 			} else {
@@ -53,6 +59,14 @@ module.exports = {
 
 			return false;
 		}
+
+		// Expressions used to indentify the event type
+		var event_expressions = [
+			{"type" : "private", "expression" : regex(/\/lectio\/(:<school_id>[0-9]*)\/privat_aftale.aspx\?aftaleid=(:<activity_id>[0-9]*)/ig)},
+			{"type" : "school",  "expression" : regex(/\/lectio\/(:<school_id>[0-9]*)\/aktivitet\/aktivitetinfo.aspx\?id=(:<activity_id>[0-9]*)&(:<prev_url>.*)/ig)},
+			{"type" : "outgoing_censor", "expression" : regex(/\/lectio\/(:<school_id>.*)\/proevehold.aspx\?type=udgcensur&outboundCensorID=(:<outbound_censor_id>.*)&prevurl=(:<prev_url>.*)/ig)},
+			{"type" : "exam", "expression" : regex(/\/lectio\/(:<school_id>.*)\/proevehold.aspx\?type=proevehold&ProeveholdId=(:<test_team_id>.*)&prevurl=(:<prev_url>.*)/ig)}
+		];
 
 		// Create a list of all the different rows in the timetable
 		var timetable_rows = $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").find("tr")
@@ -144,6 +158,7 @@ module.exports = {
 
 		// Find all the timetable elements of this day
 		var day_elements = $(timetable_rows[3]).find("td");
+		delete day_elements[0]
 
 		// Loop over them and parse them into the timetable_elements list
 		$(day_elements).each( function ( day_index, day ) {
@@ -170,6 +185,7 @@ module.exports = {
 
 			//
 			var day_timetable_elements = day.find("a");
+			console.log(day_timetable_elements.length);
 
 			module_index = 1;
 
@@ -186,16 +202,9 @@ module.exports = {
 				module_index = module_index + 1
 			} );
 
-			// Expressions used to indentify the event type
-			var event_expressions = [
-				{"type" : "private", "expression" : regex(/\/lectio\/(:<school_id>[0-9]*)\/privat_aftale.aspx\?aftaleid=(:<activity_id>[0-9]*)/ig)},
-				{"type" : "school",  "expression" : regex(/\/lectio\/(:<school_id>[0-9]*)\/aktivitet\/aktivitetinfo.aspx\?id=(:<activity_id>[0-9]*)&(:<prev_url>.*)/ig)},
-				{"type" : "outgoing_censor", "expression" : regex(/\/lectio\/(:<school_id>.*)\/proevehold.aspx\?type=udgcensur&outboundCensorID=(:<outbound_censor_id>.*)&prevurl=(:<prev_url>.*)/ig)},
-				{"type" : "exam", "expression" : regex(/\/lectio\/(:<school_id>.*)\/proevehold.aspx\?type=proevehold&ProeveholdId=(:<test_team_id>.*)&prevurl=(:<prev_url>.*)/ig)}
-			];
-
 			// Timetable Elements
 			$(day_timetable_elements).each( function ( timetable_index, day_timetable_element ) {
+
 				day_timetable_element = $(day_timetable_element)
 
 				// Find event type
@@ -205,6 +214,10 @@ module.exports = {
 				var event_match = null;
 				event_expressions.forEach( function ( expression, expression_index ) {
 					var match = expression.expression.exec(day_timetable_element.attr("href"));
+
+					if ( match == null ) {
+						match = expression.expression.exec(day_timetable_element.attr("href")); // TODO: FUCKING BULLSHIT
+					}
 
 					if ( match != null && Object.keys(match.captures).length > 0 ) {
 						event_type = expression.type;
@@ -324,7 +337,7 @@ module.exports = {
 					switch ( event_type ) {
 						case "private":
 							timetable_elements.push({
-								"text" : day_timetable_element.text(),
+								"text" : day_timetable_element.text().trim(),
 								"activity_id" : event_match.capture("activity_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -338,7 +351,7 @@ module.exports = {
 
 						case "outgoing_censor":
 							timetable_elements.push({
-								"text" : day_timetable_element.teactivity_idxt(),
+								"text" : day_timetable_element.text().trim(),
 								"activity_id" : event_match.capture("outbound_censor_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -352,7 +365,7 @@ module.exports = {
 
 						case "exam":
 							timetable_elements.push({
-								"text" : day_timetable_element.text(),
+								"text" : day_timetable_element.text().trim(),
 								"test_team_id" : event_match.capture("test_team_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -374,7 +387,7 @@ module.exports = {
 							}
 
 							timetable_elements.push({
-								"text" : day_timetable_element.text(),
+								"text" : day_timetable_element.text().trim(),
 								"activity_id" : event_match.capture("activity_id"),
 								"start_time" : start_time,
 								"end_time" : end_time,
@@ -384,7 +397,7 @@ module.exports = {
 								"teachers" : teachers,
 								"teams" : teams,
 								"location_text" : status_div.text().trim(),
-								"room_text" : room_text,
+								"room_text" : room_text.trim(),
 								"week" : week,
 								"year" : year,
 								"user_id" : user_id
@@ -405,7 +418,6 @@ module.exports = {
   			console.log('The record has been deleted');
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
-				console.log(timetable_insert_element);
 				Lectio.create(timetable_insert_element).exec(function createCB(err,created){
 	  				console.log('Created event ' + created.activity_id);
 	  			});
