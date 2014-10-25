@@ -4,6 +4,7 @@ var datetime = require('datetimejs');
 var regex = require('named-regexp').named;
 var moment = require('moment');
 var momenttimezone = require('moment-timezone');
+var util = require('util')
 // moment().format(); <-- What does it even do??
 
 // Adds a leading zero to numbers less than 10, to ensure the right format for dates and months,
@@ -295,11 +296,29 @@ module.exports = {
 
 				// Match the event times, from the text using regex
 				if ( time_match.length > 0 ) {
-					var start_time = moment.tz(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("start_hour") + ":" + time_match.capture("start_minute"), "Europe/Copenhagen");
-					var end_time = moment.tz(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("end_hour") + ":" + time_match.capture("end_minute"), "Europe/Copenhagen");
+
+					var start_time = moment.tz(
+						util.format('%s-W%s-%s %s:%s', 
+							year, 
+							time_week, 
+							day_of_week, 
+							time_match.capture("start_hour"),  
+							time_match.capture("start_minute")
+						), "Europe/Copenhagen" 
+					);
+					
+					var end_time = moment.tz(
+						util.format('%s-W%s-%s %s:%s', 
+							year, 
+							time_week, 
+							day_of_week, 
+							time_match.capture("end_hour"), 
+							time_match.capture("end_minute")
+						), "Europe/Copenhagen"
+					);
 
 				} else {
-					// Grap the different time, from the text sections
+					// Grab the different time, from the text sections
 
 					var date_sections = top_section[0 + is_changed_or_cancelled].split(" ");
 					var start_date_section = 0;
@@ -324,9 +343,23 @@ module.exports = {
 					var alternative_start_day_match = alternative_day_regex.exec(start_date_section.trim());
 					var alternative_end_day_match = alternative_day_regex.exec(end_date_section.trim());
 
-					var start_time = moment.tz(alternative_start_day_match.capture("year") + "-" + zero_padding(alternative_start_day_match.capture("month")) + "-" + zero_padding(alternative_start_day_match.capture("day")) + " " + start_time_section.trim(), "Europe/Copenhagen");
-					var end_time = moment.tz(alternative_end_day_match.capture("year") + "-" + zero_padding(alternative_end_day_match.capture("month")) + zero_padding(alternative_end_day_match.capture("day")) + " " + end_time_section.trim(), "Europe/Copenhagen");
+					var start_time = moment.tz(
+						util.format('%s-%s-%s %s', 
+							alternative_start_day_match.capture("year"), 
+							zero_padding(alternative_start_day_match.capture("month")), 
+							zero_padding(alternative_start_day_match.capture("day")), 
+							start_time_section.trim()
+						), "Europe/Copenhagen" 
+					);
 
+					var end_time = moment.tz(
+						util.format('%s-%s-%s %s', 
+							alternative_end_day_match.capture("year"), 
+							zero_padding(alternative_end_day_match.capture("month")), 
+							zero_padding(alternative_end_day_match.capture("day")), 
+							end_time_section.trim()
+						), "Europe/Copenhagen" 
+					);
 				}
 
 				var room_text = "";
