@@ -245,7 +245,7 @@ module.exports = {
 					info_span_element = $(info_span_element)
 					var context_card_id = info_span_element.attr("lectiocontextcard");
 
-					if ( context_card_id.length > 0 ) {
+					if ( context_card_id != null && context_card_id.length > 0 ) {
 						if ( context_card_id.substring(0, 1) == "H" ) {
 							teams.push({
 								"context_card_id" : context_card_id,
