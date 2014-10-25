@@ -26,11 +26,17 @@ function same_day ( date, day_of_week, week, year ) {
 // The LectioTimetable service in api/services
 module.exports = {
 
+	construct_url : function ( week, year, user_id, school_id ) {
+		return "https://www.lectio.dk/lectio/" + school_id + "/SkemaNy.aspx?type=elev&elevid=" + user_id + "&week=" + zero_padding(week) + year;
+	},
+
 	// Retrives the data, and calls the parse_data function of this service
-	get : function ( url, week, year ) {
+	get : function ( week, year, user_id, school_id ) {
+		url = this.construct_url(week, year, user_id, school_id);
+
 		request(url, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				parse_data(body, week, year);
+				parse_data(body, week, year, user_id, school_id);
 			} else {
 				// Error...
 			}
@@ -38,7 +44,7 @@ module.exports = {
 	},
 
 	// Parses the retrieves Lectio data
-	parse_data : function ( response, week, year ) {
+	parse_data : function ( response, week, year, user_id, school_id ) {
 		$ = cheerio.load(response);
 
 		// If this table doesn't exist, an error occured while recieving data
@@ -322,7 +328,8 @@ module.exports = {
 								"event_type" : event_type,
 								"school_id" : event_match.capture("school_id"),
 								"week" : week,
-								"year" : year
+								"year" : year,
+								"user_id" : user_id
 							});
 						break;
 
@@ -335,7 +342,8 @@ module.exports = {
 								"event_type" : event_type,
 								"school_id" : event_match.capture("school_id"),
 								"week" : week,
-								"year" : year
+								"year" : year,
+								"user_id" : user_id
 							});
 						break;
 
@@ -348,7 +356,8 @@ module.exports = {
 								"event_type" : event_type,
 								"school_id" : event_match.capture("school_id"),
 								"week" : week,
-								"year" : year
+								"year" : year,
+								"user_id" : user_id
 							});
 						break;
 
@@ -360,8 +369,6 @@ module.exports = {
 							} else if ( status_div.hasClass("s2cancelled") ) {
 								event_status = "cancelled"
 							}
-
-							console.log(teams);
 
 							timetable_elements.push({
 								"text" : day_timetable_element.text(),
@@ -376,13 +383,26 @@ module.exports = {
 								"location_text" : status_div.text().trim(),
 								"room_text" : room_text,
 								"week" : week,
-								"year" : year
+								"year" : year,
+								"user_id" : user_id
 							});
 						break;
 					}
 				}
 			} );
-		} )
+		} );
+		
+		// Remove Existing
+		Lectio.destroy({
+			"week" : week,
+			"year" : year,
+			"user_id" : user_id,
+			"school_id" : school_id
+		});
+
+		// Insert the new
+		timetable_elements.forEach( function ( timetable_element_index, timetable_insert_element ) {
+			Lectio.create(timetable_insert_element);
+		} );
 	}
 }
-//get("https://www.lectio.dk/lectio/517/SkemaNy.aspx?type=elev&elevid=4789793691&week=412014",41, 2014);
