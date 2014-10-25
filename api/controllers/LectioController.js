@@ -40,6 +40,16 @@ module.exports = {
 		// [ branch: '517', section: 'asdasd', year: '2014', week: '42' ]
 		LectioTimetable.get(params.branch, params.section, params.year, params.week);
 		return res.send("Collection");
+	},
+
+	collect_all: function (req, res) {
+		var params = req.params;
+
+		for (var week = 31; week <= 46; week++) {
+			LectioTimetable.get(params.branch, params.section, params.year, week);
+		}
+
+		return res.send("Working on it, bitch!")
 	}
 };
 

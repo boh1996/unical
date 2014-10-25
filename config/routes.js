@@ -37,6 +37,7 @@ module.exports.routes = {
   },
   'get /lectio/:branch/:section/:year': 'LectioController.timetable',
   'get /lectio/collect/:branch/:section/:year/:week': 'LectioController.collect',
+  'get /lectio/collect_all/:branch/:section/:year': 'LectioController.collect_all'
 
   /***************************************************************************
   *                                                                          *
