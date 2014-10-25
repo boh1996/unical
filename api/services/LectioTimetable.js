@@ -5,7 +5,8 @@ var regex = require('named-regexp').named;
 var moment = require('moment');
 // moment().format(); <-- What does it even do??
 
-
+// Adds a leading zero to numbers less than 10, to ensure the right format for dates and months,
+// it turns 9 into 09
 function zero_padding ( string ) {
 	integer = parseInt(string, 0);
 	if ( integer < 10 ) {
@@ -15,13 +16,17 @@ function zero_padding ( string ) {
 	}
 }
 
+// Checks if the day of to events is the same
 function same_day ( date, day_of_week, week, year ) {
 	var day_two = moment(year+"-W" + week + "-" + day_of_week + " 12:00");
 
 	return day_two.isSame(date, 'day');
 }
 
+// The LectioTimetable service in api/services
 module.exports = {
+
+	// Retrives the data, and calls the parse_data function of this service
 	get : function ( url, week, year ) {
 		request(url, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
@@ -32,40 +37,60 @@ module.exports = {
 		});
 	},
 
+	// Parses the retrieves Lectio data
 	parse_data : function ( response, week, year ) {
 		$ = cheerio.load(response);
 
+		// If this table doesn't exist, an error occured while recieving data
 		if ( $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").length < 1 ) {
 			console.log(" Wrong data! ");
 
 			return false;
 		}
 
+		// Create a list of all the different rows in the timetable
 		var timetable_rows = $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").find("tr")
 
+		// Variable storing the info about modules, 5. module is from 09 - 09.45 etc
 		var module_info = [];
+
+		// Stores all the retrieved timetable elements as objects
 		var timetable_elements = []
+
+		// The day headers, with dates for parsing reasons
 		var headers = [];
+
+		// Stores elements parsed as holidays
 		var holiday_elements = [];
 
+		// Regex for parsing the headers in the format suplied etc Torsdag (6/10)
 		var header_regex = regex(/(:<day_name>.*) \((:<day>.*)\/(:<month>.*)\)/ig);
+
+		// Regex for parsing the module deffinitions
 		var module_regex = regex(/(:<module_number>.*)\. (:<start_time>.*) - (:<end_time>.*)/ig);
+
+		// Regex for parsing the start and end time from the event multiline description
 		var time_regex = regex(/(:<start_hour>[0-9]*):(:<start_minute>[0-9]*) til (:<end_hour>[0-9]*):(:<end_minute>[0-9]*)/igm);
+		
+		// The alternative regex for parsing days, yes there are more than one format
 		var alternative_day_regex = regex(/(:<day>[0-9]*)\/(:<month>[0-9]*)-(:<year>[0-9]*)/ig);
 
 		// Fetch the starting and ending times of the modules
 		$("div.s2module-info").each( function ( index, element ) {
 			var module_info_matches = module_regex.exec($(element).text().trim().replace("modul", ""));
 
+			// If the module info is in the right format
 			if ( module_info_matches != null && Object.keys(module_info_matches.captures).length > 0 ) {
 				var start_time = module_info_matches.capture("start_time");
 
+				// If needed, add  zero padding, to ensure the correct time format
 				if ( start_time.length < 5 ) {
 					start_time = "0" + start_time;
 				}
 
 				var end_time = module_info_matches.capture("end_time");
 
+				// Add leading zero if needed to ensure correct time format
 				if ( end_time.length < 5 ) {
 					end_time = "0" + end_time;
 				}
@@ -76,20 +101,28 @@ module.exports = {
 		var header_rows = $(timetable_rows[1]).find("td");
 		delete header_rows[0];
 
+		// Loop over the headers(day headers) and parse them, to retrieves dates
 		$(header_rows).each( function ( index, element ) {
 			element = $(element);
 
+			// Match the header names with the regex
 			var header_groups = header_regex.exec(element.text().trim());
+
+			// If random error, try one more
 			if ( header_groups == null ) {
 				header_groups = header_regex.exec(element.text().trim()); // The bullshit level on this one is absurd
 			}
+
+			// Variable used, because there can be more than one year per week
 			var header_year = year;
 
+			// If year changed, this day could be in the old year, add it
 			if ( header_groups != null && header_groups.length > 0 ) {
 				if ( parseInt(week, 0) == 1 && parseInt(header_groups.capture("month"), 0) ) {
 					header_year = parseInt(year, 0) -1;
 				}
 
+				// Add the header to the list, with dayname and the date
 				headers.push({
 					"day" : header_groups.capture("day_name"),
 					"date" :  datetime.strptime( zero_padding(header_groups.capture("day")) + "-" + zero_padding(header_groups.capture("month")) + "-" + header_year + " 12:00", "%d-%m-%Y %H:%M")
@@ -99,27 +132,37 @@ module.exports = {
 
 		// Find all the timetable elements
 		var index = 0;
+
+		// Day of the week, sunday is 0
 		var day_of_week = 1;
+
+		// Find all the timetable elements of this day
 		var day_elements = $(timetable_rows[3]).find("td");
 
+		// Loop over them and parse them into the timetable_elements list
 		$(day_elements).each( function ( day_index, day ) {
 			day = $(day)
+
+			// The weeknumber starts at 0...
 			var time_week = 0;
 
 			index = index + 1;
 
 			day_of_week = index;
 
+			// Sunday is zero
 			if ( day_of_week == 7 ) {
 				day_of_week = 0;
 			}
 
+			// If the week is the first week of the year, its 0 in the calendar and 01 on Lectios
 			if ( week == 1 ) {
 				time_week = 0;
 			} else {
 				time_week = week - 1;
 			}
 
+			//
 			var day_timetable_elements = day.find("a");
 
 			module_index = 1;
@@ -198,6 +241,7 @@ module.exports = {
 				var title_text = day_timetable_element.attr("title");
 				var time_match = time_regex.exec(title_text);
 
+				// If title matching fucks, try again
 				if ( time_match == null ) {
 					time_match = time_regex.exec(title_text); // The bullshit level on this one is absurd
 				}
@@ -211,6 +255,7 @@ module.exports = {
 				var is_cancelled = false;
 				var is_changed = false;
 
+				// Check if event is changed or cancelled
 				if ( top_section[0].indexOf("til") == "-1" ) {
 					is_changed_or_cancelled = 1;
 
@@ -221,11 +266,14 @@ module.exports = {
 					}
 				}
 
+				// Match the event times, from the text using regex
 				if ( time_match.length > 0 ) {
 					var start_time = moment(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("start_hour") + ":" + time_match.capture("start_minute"));
 					var end_time = moment(year+"-W" + time_week + "-" + day_of_week + " " + time_match.capture("end_hour") + ":" + time_match.capture("end_minute"));
 
 				} else {
+					// Grap the different time, from the text sections
+
 					var date_sections = top_section[0 + is_changed_or_cancelled].split(" ");
 					var start_date_section = 0;
 					var end_date_section = 0;
@@ -257,10 +305,12 @@ module.exports = {
 				var room_text = "";
 				var room = "";
 
+				// Grap the room text
 				if ( top_section[3 + is_changed_or_cancelled] != undefined && top_section[3 + is_changed_or_cancelled].indexOf("rer:") == "-1" ) {
 					var room = top_section[3 + is_changed_or_cancelled].replace("Lokale: ", "").replace("r:", "");
 				}
 
+				// Only insert if the current day is the events starting day
 				if ( same_day(start_time, day_of_week, time_week, year) ) {
 					switch ( event_type ) {
 						case "private":
