@@ -32,7 +32,7 @@ module.exports = {
 		return "https://www.lectio.dk/lectio/" + school_id + "/SkemaNy.aspx?type=elev&elevid=" + user_id + "&week=" + zero_padding(week) + year;
 	},
 
-	// Retrives the data, and calls the parse_data function of this service
+	// Retrives the data, and calls the parse_data githufunction of this service
 	get : function ( school_id, user_id, term, week ) {
 
 		url = this.construct_url(week, term, user_id, school_id);
@@ -458,7 +458,7 @@ module.exports = {
 		} );
 		
 		// Remove Existing
-		Lectio.destroy({
+		Lectio_timetable.destroy({
 			"week" : week,
 			"year" : year,
 			"user_id" : user_id,
@@ -467,7 +467,7 @@ module.exports = {
   			console.log('The record has been deleted');
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
-				Lectio.create(timetable_insert_element).exec(function createCB(err,created){
+				Lectio_timetable.create(timetable_insert_element).exec(function createCB(err,created){
 	  				console.log('Created event ' + created.activity_id);
 	  			});
 			});
