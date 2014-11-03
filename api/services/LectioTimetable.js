@@ -63,7 +63,9 @@ module.exports = {
 
 		// If this table doesn't exist, an error occured while recieving data
 		if ( $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").length < 1 ) {
-			callback(false);
+			if ( typeof callback == "function" ) {
+				callback(false);
+			}
 			console.log(" Wrong data! ");
 
 			return false;
@@ -476,7 +478,9 @@ module.exports = {
 	  				console.log('Created event ' + created.activity_id);
 	  			});
 			});
-			callback(true);
+			if ( typeof callback == "function" ) {
+				callback(true);
+			}
   		});
 	}
 }
