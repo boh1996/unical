@@ -19,7 +19,7 @@ module.exports = {
 
 				var cal = ical();
 
-				cal.setDomain('unical.co').setName("Lectio - " + user[0].name);
+				cal.setDomain('unical.illution.dk').setName("Lectio - " + user[0].name);
 
 				found.forEach(function (event, index) {
 					var event_object = {
