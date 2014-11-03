@@ -8,12 +8,12 @@ module.exports = {
 	},
 
 	get : function ( user_id, school_id ) {
-		var url = this.construct_url(user_id, school_id);
+		var url = LectioUser.construct_url(user_id, school_id);
 		request({
 			"url": url
 		}, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				this.parse_data(body, user_id, school_id);
+				LectioUser.parse_data(body, user_id, school_id);
 			} else {
 				console.log("User Import Error");
 				// Error...
@@ -31,10 +31,20 @@ module.exports = {
 			return false;
 		}
 
-		var user_regex = regex(/(:<user_type>.*) (:<name>.*), (:<class>.*) - (:<type>.*)/ig);
-		var user = user_regex($("#s_m_HeaderContent_MainTitle").text().trim());
+		var user_regex = regex(/(:<user_type>\S*) (:<name>.*), (:<class>.*) - (:<type>.*)/ig);
+		var user = user_regex.exec($("#s_m_HeaderContent_MainTitle").text().trim());
 
-		console.log(user);
+		var user_type_string = "other";
+
+		switch ( user.capture("user_type") ) {
+			case "Eleven":
+				user_type_string = "student";
+			break;
+
+			case "Læreren":
+				user_type_string = "teacher";
+			break;
+		}
 
 		Lectio_sections.update(
 			{
@@ -42,8 +52,10 @@ module.exports = {
 				"school_id" : school_id
 			}, {
 				"name" : user.capture("name"),
-				"user_type" : user.capture("user_type")
+				"user_type" : user_type_string
 			}
-		).exec();
+		).exec( function updateCB (res) {
+
+		} );
 	}
 }

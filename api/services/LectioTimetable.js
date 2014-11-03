@@ -394,7 +394,8 @@ module.exports = {
 								"school_id" : event_match.capture("school_id"),
 								"week" : week,
 								"year" : year,
-								"user_id" : user_id
+								"user_id" : user_id,
+								"url" : "https://www.lectio.dk/lectio/" + school_id + "/privat_aftale.aspx?aftaleid=" + event_match.capture("activity_id")
 							});
 						break;
 
@@ -408,7 +409,8 @@ module.exports = {
 								"school_id" : event_match.capture("school_id"),
 								"week" : week,
 								"year" : year,
-								"user_id" : user_id
+								"user_id" : user_id,
+								"url" : "https://www.lectio.dk/lectio/" + school_id + "/proevehold.aspx?type=udgcensur&outboundCensorID=" + event_match.capture("outbound_censor_id")
 							});
 						break;
 
@@ -422,7 +424,8 @@ module.exports = {
 								"school_id" : event_match.capture("school_id"),
 								"week" : week,
 								"year" : year,
-								"user_id" : user_id
+								"user_id" : user_id,
+								"url" : "https://www.lectio.dk/lectio/" + school_id + "/proevehold.aspx?type=proevehold&ProeveholdId=" + event_match.capture("test_team_id")
 							});
 						break;
 
@@ -449,7 +452,8 @@ module.exports = {
 								"room_text" : room_text.trim().replace("\n", ""),
 								"week" : week,
 								"year" : year,
-								"user_id" : user_id
+								"user_id" : user_id,
+								"url" : "https://www.lectio.dk/lectio/" + school_id + "/aktivitet/aktivitetinfo.aspx?id=" + event_match.capture("activity_id")
 							});
 						break;
 					}

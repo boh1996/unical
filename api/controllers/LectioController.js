@@ -12,36 +12,43 @@ module.exports = {
 		// [ branch: '517', section: 'asdasd', year: '2014' ]
 		//return res.json();
 		Lectio_timetable.find({school_id: params.branch, user_id: params.section, year: params.year}).exec(function findCB(error,found){
-			if (found.length == 0) {
-				return res.send("Nope :(");
-			} 
-
-			var cal = ical();
-
-			cal.setDomain('unical.co').setName('It\'s very awesome!');
-
-			found.forEach(function (event, index) {
-				cal.addEvent({
-					start: 			event.start_time,
-					end: 			event.end_time,
-					summary: 		event.text.trim(),
-					description: 	event.text.trim(),
-					location: 		event.location_text.trim()
-				});
-			});
-			res.setHeader('Content-Type', 'text/calendar');
-			res.setHeader('Content-Disposition', 'attachment; filename="calendar.ics"');
-
-			Lectio_sections.find({school_id: params.branch, user_id: params.section}).exec(function findCB(err, result){
-				console.log(result.length);
-				if ( result.length == 0 ) {
-					Lectio_sections.create({school_id: params.branch, user_id: params.section}).exec(function createCB(createError, createResult) {
-						LectioUser.get(params.section, params.branch);
-					});
+			Lectio_sections.find({user_id : params.section}).exec(function findCB(find_error, user){
+				if (found.length == 0 || user.length == 0) {
+					return res.send("Nope :(");
 				}
-			});
 
-			return res.send(cal.toString().replace('\n', '\r\n'));
+				var cal = ical();
+
+				cal.setDomain('unical.co').setName("Lectio - " + user[0].name);
+
+				found.forEach(function (event, index) {
+					var event_object = {
+						start: 			event.start_time,
+						end: 			event.end_time,
+						summary: 		event.text.trim(),
+						description: 	event.text.trim(),
+						location: 		event.location_text.trim()
+					};
+
+					if ( event.hasOwnProperty("url") ) {
+						event_object.url = event.url;
+					}
+
+					cal.addEvent(event_object);
+				});
+				res.setHeader('Content-Type', 'text/calendar');
+				res.setHeader('Content-Disposition', 'attachment; filename="calendar.ics"');
+
+				Lectio_sections.find({school_id: params.branch, user_id: params.section}).exec(function findCB(err, result){
+					if ( result.length == 0 ) {
+						Lectio_sections.create({school_id: params.branch, user_id: params.section}).exec(function createCB(createError, createResult) {
+							LectioUser.get(params.section, params.branch);
+						});
+					}
+				});
+
+				return res.send(cal.toString().replace('\n', '\r\n'));
+			});
 		});
 	},
 
