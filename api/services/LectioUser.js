@@ -26,6 +26,7 @@ module.exports = {
 
 		// If this table doesn't exist, an error occured while recieving data
 		if ( $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").length < 1 ) {
+			callback(false);
 			console.log(" Wrong data! ");
 
 			return false;

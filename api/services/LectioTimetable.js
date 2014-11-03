@@ -33,7 +33,7 @@ module.exports = {
 	},
 
 	// Retrives the data, and calls the parse_data githufunction of this service
-	get : function ( school_id, user_id, term, week ) {
+	get : function ( school_id, user_id, term, week, callback ) {
 
 		url = this.construct_url(week, term, user_id, school_id);
 
@@ -44,7 +44,7 @@ module.exports = {
 			}
 		}, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				LectioTimetable.parse_data(body, week, term, user_id, school_id);
+				LectioTimetable.parse_data(body, week, term, user_id, school_id, callback);
 			} else {
 				// Error...
 			}
@@ -52,7 +52,7 @@ module.exports = {
 	},
 
 	// Parses the retrieves Lectio data
-	parse_data : function ( response, week, term, user_id, school_id ) {
+	parse_data : function ( response, week, term, user_id, school_id, callback ) {
 		if ( week < 30 ) {
 			var year = parseInt(term) + 1;
 		} else {
@@ -63,6 +63,7 @@ module.exports = {
 
 		// If this table doesn't exist, an error occured while recieving data
 		if ( $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").length < 1 ) {
+			callback(false);
 			console.log(" Wrong data! ");
 
 			return false;
@@ -475,6 +476,7 @@ module.exports = {
 	  				console.log('Created event ' + created.activity_id);
 	  			});
 			});
+			callback(true);
   		});
 	}
 }
