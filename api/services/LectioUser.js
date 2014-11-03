@@ -7,13 +7,13 @@ module.exports = {
 		return "https://www.lectio.dk/lectio/" + school_id + "/SkemaNy.aspx?type=elev&elevid=" + user_id
 	},
 
-	get : function ( user_id, school_id ) {
+	get : function ( user_id, school_id, callback ) {
 		var url = LectioUser.construct_url(user_id, school_id);
 		request({
 			"url": url
 		}, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				LectioUser.parse_data(body, user_id, school_id);
+				LectioUser.parse_data(body, user_id, school_id, callback);
 			} else {
 				console.log("User Import Error");
 				// Error...
@@ -21,7 +21,7 @@ module.exports = {
 		});
 	},
 
-	parse_data : function (body, user_id, school_id) {
+	parse_data : function (body, user_id, school_id, callback) {
 		$ = cheerio.load(body);
 
 		// If this table doesn't exist, an error occured while recieving data
@@ -46,16 +46,20 @@ module.exports = {
 			break;
 		}
 
+		var user_insert_object = {
+			"name" : user.capture("name"),
+			"user_type" : user_type_string
+		};
+
 		Lectio_sections.update(
 			{
 				"user_id" : user_id,
 				"school_id" : school_id
-			}, {
-				"name" : user.capture("name"),
-				"user_type" : user_type_string
-			}
+			}, user_insert_object
 		).exec( function updateCB (res) {
-
+			if ( typeof callback == "function" ) {
+				callback(user_insert_object);
+			}
 		} );
 	}
 }
