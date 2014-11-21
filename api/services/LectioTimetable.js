@@ -441,6 +441,13 @@ module.exports = {
 								event_status = "cancelled"
 							}
 
+							var imgs = status_div.find("img");
+							var location_text = "";
+
+							if ( typeof imgs[imgs.length - 1] != "undefined" ) {
+								location_text = imgs[imgs.length - 1].next.data.substring(1)
+							}
+
 							timetable_elements.push({
 								"text" : text,
 								"activity_id" : event_match.capture("activity_id"),
@@ -451,7 +458,7 @@ module.exports = {
 								"status" : event_status,
 								"teachers" : teachers,
 								"teams" : teams,
-								"location_text" : status_div.text().trim().replace("\n", ""),
+								"location_text" : location_text,
 								"room_text" : room_text.trim().replace("\n", ""),
 								"week" : week,
 								"year" : year,
