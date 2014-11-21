@@ -34,7 +34,7 @@ function returnCalendar ( res, params, user ) {
 
 			cal.addEvent(event_object);
 		});
-		res.setHeader('Content-Type', 'text/calendar');
+		res.setHeader('Content-Type', 'text/calendar; charset=UTF-8');
 		res.setHeader('Content-Disposition', 'attachment; filename="calendar.ics"');
 
 		return res.send(cal.toString().replace('\n', '\r\n'));
