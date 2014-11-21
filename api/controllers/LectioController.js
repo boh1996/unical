@@ -8,7 +8,7 @@ var ical = require('ical-generator');
 var moment = require('moment');
 
 function returnCalendar ( res, params, user ) {
-	Lectio_timetable.find({school_id: params.branch, user_id: params.section, year: params.year}).exec(function findCB(error,found){
+	Lectio_timetable.find({school_id: params.branch, user_id: params.section}).exec(function findCB(error,found){
 		var cal = ical();
 		cal.setDomain('unical.illution.dk');
 
@@ -24,7 +24,8 @@ function returnCalendar ( res, params, user ) {
 				end: 			event.end_time,
 				summary: 		event.text.trim(),
 				description: 	event.text.trim(),
-				location: 		event.location_text.trim()
+				location: 		event.location_text.trim(),
+				status: 		(event.status == 'cancelled' ? 'cancelled' : 'confirmed')
 			};
 
 			if ( event.hasOwnProperty("url") ) {
@@ -62,7 +63,7 @@ module.exports = {
 						res.setHeader('Content-Disposition', 'attachment; filename="calendar.ics"');
 
 						var now = moment(Date.now());
-						LectioTimetable.get(params.branch, params.section, params.year, now.format("ww"), function ( success ) {
+						LectioTimetable.get(params.branch, params.section, now.format("YYYY"), now.format("ww"), function ( success ) {
 							if ( success == true ) {
 								returnCalendar(res, params, userResponse);
 							} else {
@@ -78,30 +79,16 @@ module.exports = {
 		});
 	},
 
-	collect: function (req, res) {
-		var params = req.params;
-		LectioTimetable.get(params.branch, params.section, params.year, params.week);
-		return res.send("Collection");
-	},
-
-	collect_all: function (req, res) {
-		var params = req.params;
-
-		for (var week = 31; week <= 52; week++) {
-			LectioTimetable.get(params.branch, params.section, params.year, String(week));
-		}
-
-		return res.send("Working on it, bitch!")
-	},
-
 	daily: function (req, res) {
 		var now = moment(Date.now());
 		Lectio_sections.find().exec(function findCB(find_error, users){
 			users.forEach(function (user, index) {
 				var current_week = parseInt(now.format("ww"));
-				for (var week = current_week - 1; week <= 52; week++) {
-					console.log("Running the shizzle for " + user['school_id'] + "/" + user['user_id'] + " in " + now.format("Y") + ":" + String(week));
-					LectioTimetable.get(user['school_id'], user['user_id'], now.format("YYYY"), String(week));
+				for (var week = current_week; week <= current_week + 4; week++) {
+					if (week <= 52) {
+						console.log("Running the shizzle for " + user['school_id'] + "/" + user['user_id'] + " in " + now.format("YYYY") + ":" + String(week));
+						LectioTimetable.get(user['school_id'], user['user_id'], now.format("YYYY"), String(week));
+					}
 				}
 			});
 		return res.send("Working on it, bitch!")
