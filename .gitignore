@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 
+sftp-config.json
 # C extensions
 *.so
 

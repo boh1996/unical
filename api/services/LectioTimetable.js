@@ -447,7 +447,7 @@ module.exports = {
 								"start_time" : start_time,
 								"end_time" : end_time,
 								"event_type" : event_type,
-								"school_id" : event_match.capture("school_id"),
+								"school_id" : school_id,
 								"status" : event_status,
 								"teachers" : teachers,
 								"teams" : teams,
@@ -471,6 +471,7 @@ module.exports = {
 			"user_id" : user_id,
 			"school_id" : school_id
 		}).exec(function deleteCB(err){
+			console.log(err);
   			console.log('The record has been deleted');
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {

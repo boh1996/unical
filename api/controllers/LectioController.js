@@ -46,6 +46,7 @@ module.exports = {
 
 		Lectio_sections.find({user_id : params.section}).exec(function findCB(find_error, user){
 			if (  user.length == 0 ) {
+				console.log("Fuck it, new user")
 				Lectio_sections.create({school_id: params.branch, user_id: params.section}).exec(function createCB(createError, createResult) {
 					LectioUser.get(params.section, params.branch, function (userResponse){
 						var cal = ical();
@@ -71,6 +72,7 @@ module.exports = {
 					});
 				});
 			} else {
+				console.log("This user already existed")
 				returnCalendar( res, params, user[0] );
 			}
 		});
@@ -85,11 +87,25 @@ module.exports = {
 	collect_all: function (req, res) {
 		var params = req.params;
 
-		for (var week = 31; week <= 46; week++) {
-			LectioTimetable.get(params.branch, params.section, params.year, week);
+		for (var week = 31; week <= 52; week++) {
+			LectioTimetable.get(params.branch, params.section, params.year, String(week));
 		}
 
 		return res.send("Working on it, bitch!")
+	},
+
+	daily: function (req, res) {
+		var now = moment(Date.now());
+		Lectio_sections.find().exec(function findCB(find_error, users){
+			users.forEach(function (user, index) {
+				var current_week = parseInt(now.format("ww"));
+				for (var week = current_week - 1; week <= 52; week++) {
+					console.log("Running the shizzle for " + user['school_id'] + "/" + user['user_id'] + " in " + now.format("Y") + ":" + String(week));
+					LectioTimetable.get(user['school_id'], user['user_id'], now.format("YYYY"), String(week));
+				}
+			});
+		return res.send("Working on it, bitch!")
+		});
 	}
 };
 
