@@ -37,7 +37,8 @@ module.exports.routes = {
   },
   'get /lectio/:branch/:section/:year': 'LectioController.timetable',
   'get /lectio/:branch/:section': 'LectioController.timetable',
-  'get /lectio/daily': 'LectioController.daily'
+  'get /lectio/daily': 'LectioController.daily',
+  "get /lectio/assignments" : "LectioController.assignments"
 
   /***************************************************************************
   *                                                                          *

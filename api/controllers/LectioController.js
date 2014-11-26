@@ -42,6 +42,11 @@ function returnCalendar ( res, params, user ) {
 }
 
 module.exports = {
+	assignments : function (req, res) {
+		LectioAssignments.get(517, 4733693427, 4789794962, "", "");
+		res.send("BØF");
+	},
+
 	timetable: function (req, res) {
 		var params = req.params;
 
