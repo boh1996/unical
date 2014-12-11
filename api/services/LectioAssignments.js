@@ -45,16 +45,18 @@ module.exports = {
 				}
 			} else {
 				if ( typeof callback == "function" ) {
+					console.log("Request Error!");
 					callback(false);
 				}
 			}
 		});
 	},
 
-	parse_data : function ( student_id, response ) {
+	parse_data : function ( student_id, response, callback ) {
 		var $ = cheerio.load(response);
 
 		if ( $("#s_m_Content_Content_ExerciseGV") == null ) {
+			console.log("Content failed!");
 			return false;
 		}
 
@@ -75,6 +77,8 @@ module.exports = {
 			if ( elements[3] != undefined ) {
 				var result = pattern.exec($(elements[3]).text().trim());
 				var start_time = moment.tz(result[3] + "-" + zero_padding(result[2]) + "-" + zero_padding(result[1]) + " " + result[4], "Europe/Copenhagen").toDate();
+				var event_start_time = moment(parseInt(start_time.format("X")) - ( parseFloat($(elements[4]).text().trim().replace(",", ".")) * 3600 )).toDate();
+
 				assignments.push({
 					"student_note" : $(elements[10]).text().trim(),
 					"grade" : $(elements[9]).text().trim(),
@@ -84,9 +88,11 @@ module.exports = {
 					"status" : $(elements[5]).text().trim(),
 					"student_time" : parseFloat($(elements[4]).text().trim().replace(",", ".")),
 					"time" : start_time,
+					"event_start_time" : event_start_time,
 					"title" : $(elements[2]).text().trim(),
 					"team" : $(elements[1]).text().trim(),
-					"student_id" : String(student_id)
+					"student_id" : String(student_id),
+					"url" : $(elements[3]).text().trim()
 				});
 			}
 			if ( ! isNaN(parseFloat($(elements[4]).text().trim().replace(",", "."))) ) {
@@ -94,7 +100,7 @@ module.exports = {
 			}
 		} );
 
-		console.log(student_time);
+		console.log("Collected!");
 
 		Lectio_assignments.destroy({
 			"student_id" : String(student_id)
@@ -107,13 +113,13 @@ module.exports = {
 	  				
 	  			});
 			});
-			/*if ( typeof callback == "function" ) {
+			if ( typeof callback == "function" ) {
 				callback(true);
-			}*/
+			}
   		});
 	},
 
-	get : function ( school_id, branch_id, student_id, username, password ) {
+	get : function ( school_id, branch_id, student_id, username, password, callback ) {
 		var session = LectioAuthenticate.authenticate(school_id, branch_id, username, password, function ( cookies ) {
 			if ( cookies != false ) {
 				var url = LectioAssignments.construct_url(school_id, student_id);
@@ -135,19 +141,31 @@ module.exports = {
 									"__VIEWSTATEX" : base("#__VIEWSTATEX").val(),
 								}, cookies, function ( body ) {
 									if ( body != false ) {
-										LectioAssignments.parse_data(student_id, body);
+										LectioAssignments.parse_data(student_id, body, callback);
 									} else {
 										console.log("No Body!");
+
+										if ( typeof callback == "function" ) {
+											callback(false);
+										}
 									}
 								});
 							} else {
 								console.log("Failed First");
+
+								if ( typeof callback == "function" ) {
+									callback(false);
+								}
 							}
 						});
 					}
 				});
 			} else {
 				console.log("Sign-in failed!");
+
+				if ( typeof callback == "function" ) {
+					callback(false);
+				}
 			}
 		});
 	}
