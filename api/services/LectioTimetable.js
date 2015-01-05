@@ -4,7 +4,8 @@ var datetime = require('datetimejs');
 var regex = require('named-regexp').named;
 var moment = require('moment');
 var momenttimezone = require('moment-timezone');
-var util = require('util')
+var util = require('util');
+var Socks5ClientHttpsAgent = require('socks5-https-client/lib/Agent');
 // moment().format(); <-- What does it even do??
 
 // Adds a leading zero to numbers less than 10, to ensure the right format for dates and months,
@@ -33,41 +34,49 @@ module.exports = {
 	},
 
 	// Retrives the data, and calls the parse_data githufunction of this service
-	get : function ( school_id, user_id, term, week, callback ) {
+	get : function ( school_id, user_id, year, week, callback ) {
 
-		url = this.construct_url(week, term, user_id, school_id);
+		url = this.construct_url(week, year, user_id, school_id);
+
+		var term = null;
+
+		if ( week < 30 ) {
+			term = parseInt(year) - 1;
+		} else {
+			term = year;
+		}
+
+		console.log("Term", term , url);
 
 		request({
 			"url": url,
 			"headers": {
 				"s$m$ChooseTerm$term": term
-			}
+			},	
+			agent: new Socks5ClientHttpsAgent({
+		        socksHost: 'localhost', 
+		        socksPort: 9050
+		    })
+
 		}, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				LectioTimetable.parse_data(body, week, term, user_id, school_id, callback);
+				LectioTimetable.parse_data(body, week, year, user_id, school_id, callback);
 			} else {
-				// Error...
+				console.log("Wauw, status code error! This is not funny shit!");
 			}
 		});
 	},
 
 	// Parses the retrieves Lectio data
-	parse_data : function ( response, week, term, user_id, school_id, callback ) {
-		if ( week < 30 ) {
-			var year = parseInt(term) + 1;
-		} else {
-			var year = term;
-		}
-
+	parse_data : function ( response, week, year, user_id, school_id, callback ) {
 		$ = cheerio.load(response);
 
 		// If this table doesn't exist, an error occured while recieving data
 		if ( $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").length < 1 ) {
+			console.log(" Wrong data! " + response);
 			if ( typeof callback == "function" ) {
 				callback(false);
 			}
-			console.log(" Wrong data! ");
-
 			return false;
 		}
 
@@ -483,6 +492,8 @@ module.exports = {
 							});
 						break;
 					}
+				} else {
+					console.log("Day mismatch - what the fuck?", start_time, day_of_week, time_week, year);
 				}
 			} );
 		} );
@@ -501,7 +512,7 @@ module.exports = {
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
 				Lectio_timetable.create(timetable_insert_element).exec(function createCB(err,created){
-	  				//console.log('Created event ' + created.activity_id);
+	  				console.log('Created event ' + created.activity_id);
 	  			});
 			});
 			if ( typeof callback == "function" ) {

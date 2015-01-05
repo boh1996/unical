@@ -6,6 +6,8 @@
  */
 var ical = require('ical-generator');
 var moment = require('moment');
+var Socks5ClientHttpsAgent = require('socks5-https-client/lib/Agent');
+var request = require('request');
 
 function returnCalendar ( res, params, user ) {
 	Lectio_timetable.find({school_id: params.branch, user_id: params.section}).exec(function findCB(error,found){
@@ -147,9 +149,9 @@ module.exports = {
 		Lectio_sections.find().exec(function findCB(find_error, users){
 			users.forEach(function (user, index) {
 				var current_week = parseInt(now.format("ww"));
-				for (var week = current_week; week <= current_week + 4; week++) {
+				for (var week = current_week; week <= current_week /*+ 4*/; week++) {
 					if (week <= 52) {
-						//console.log("Running the shizzle for " + user['school_id'] + "/" + user['user_id'] + " in " + now.format("YYYY") + ":" + String(week));
+						console.log("Running the shizzle for " + user['school_id'] + "/" + user['user_id'] + " in " + now.format("YYYY") + ":" + String(week));
 						LectioTimetable.get(user['school_id'], user['user_id'], now.format("YYYY"), String(week));
 					}
 				}
@@ -159,6 +161,19 @@ module.exports = {
 				}*/
 			});
 		return res.send("Working on it, bitch!")
+		});
+	},
+
+	test_proxy: function (req, res) {
+		request({
+			"url": "https://api.ipify.org/",
+			agent: new Socks5ClientHttpsAgent({
+		        socksHost: 'localhost', 
+		        socksPort: 9050
+		    })
+
+		}, function ( error, response, body ) {
+			return res.send("IP: " + body + ", possible error: " + error);
 		});
 	}
 };
