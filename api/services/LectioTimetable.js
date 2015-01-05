@@ -4,7 +4,8 @@ var datetime = require('datetimejs');
 var regex = require('named-regexp').named;
 var moment = require('moment');
 var momenttimezone = require('moment-timezone');
-var util = require('util')
+var util = require('util');
+var Socks5ClientHttpsAgent = require('socks5-https-client/lib/Agent');
 // moment().format(); <-- What does it even do??
 
 // Adds a leading zero to numbers less than 10, to ensure the right format for dates and months,
@@ -18,9 +19,30 @@ function zero_padding ( string ) {
 	}
 }
 
+function construct_time (year, week, day_of_week, hour, minute) {
+	return moment.tz(
+		moment()
+			.zone("Dinmor")
+			.year(year)
+			.week(week)
+			.day(day_of_week)
+			.hour(hour)
+			.minute(minute)
+			.second(0)
+			.format().split("+")[0],
+		"Europe/Copenhagen"
+	);
+}
+
 // Checks if the day of to events is the same
 function same_day ( date, day_of_week, week, year ) {
-	var day_two = moment(year+"-W" + week + "-" + day_of_week + " 12:00");
+	var day_two = construct_time(
+		year,
+		week,
+		day_of_week,
+		12,
+		0
+	);
 
 	return day_two.isSame(date, 'day');
 }
@@ -33,41 +55,49 @@ module.exports = {
 	},
 
 	// Retrives the data, and calls the parse_data githufunction of this service
-	get : function ( school_id, user_id, term, week, callback ) {
+	get : function ( school_id, user_id, year, week, callback ) {
 
-		url = this.construct_url(week, term, user_id, school_id);
+		url = this.construct_url(week, year, user_id, school_id);
+
+		var term = null;
+
+		if ( week < 30 ) {
+			term = parseInt(year) - 1;
+		} else {
+			term = year;
+		}
+
+		console.log("Term", term , url);
 
 		request({
 			"url": url,
 			"headers": {
 				"s$m$ChooseTerm$term": term
-			}
+			},	
+			agent: new Socks5ClientHttpsAgent({
+		        socksHost: 'localhost', 
+		        socksPort: 9050
+		    })
+
 		}, function ( error, response, body ) {
 			if ( ! error && response.statusCode == 200 ) {
-				LectioTimetable.parse_data(body, week, term, user_id, school_id, callback);
+				LectioTimetable.parse_data(body, week, year, user_id, school_id, callback);
 			} else {
-				// Error...
+				console.log("Wauw, status code error! This is not funny shit!");
 			}
 		});
 	},
 
 	// Parses the retrieves Lectio data
-	parse_data : function ( response, week, term, user_id, school_id, callback ) {
-		if ( week < 30 ) {
-			var year = parseInt(term) + 1;
-		} else {
-			var year = term;
-		}
-
+	parse_data : function ( response, week, year, user_id, school_id, callback ) {
 		$ = cheerio.load(response);
 
 		// If this table doesn't exist, an error occured while recieving data
 		if ( $("#s_m_Content_Content_SkemaNyMedNavigation_skema_skematabel").length < 1 ) {
+			console.log(" Wrong data! " + response);
 			if ( typeof callback == "function" ) {
 				callback(false);
 			}
-			console.log(" Wrong data! ");
-
 			return false;
 		}
 
@@ -270,6 +300,7 @@ module.exports = {
 
 				// Store the titletext, where start and end times can be extracted from
 				var title_text = day_timetable_element.attr("title");
+				
 				var time_match = time_regex.exec(title_text);
 
 				// If title matching fucks, try again
@@ -300,24 +331,20 @@ module.exports = {
 				// Match the event times, from the text using regex
 				if ( time_match != null && time_match.length > 0 ) {
 
-					var start_time = moment.tz(
-						util.format('%s-W%s-%s %s:%s', 
-							year, 
-							time_week, 
-							day_of_week, 
-							time_match.capture("start_hour"),  
-							time_match.capture("start_minute")
-						), "Europe/Copenhagen" 
+					var start_time = construct_time(
+						year, 
+						time_week, 
+						day_of_week, 
+						time_match.capture("start_hour"), 
+						time_match.capture("start_minute")
 					);
 					
-					var end_time = moment.tz(
-						util.format('%s-W%s-%s %s:%s', 
-							year, 
-							time_week, 
-							day_of_week, 
-							time_match.capture("end_hour"), 
-							time_match.capture("end_minute")
-						), "Europe/Copenhagen"
+					var end_time = construct_time(
+						year, 
+						time_week, 
+						day_of_week, 
+						time_match.capture("end_hour"), 
+						time_match.capture("end_minute")
 					);
 
 				} else {
@@ -395,6 +422,11 @@ module.exports = {
 				// Only insert if the current day is the events starting day
 				if ( same_day(start_time, day_of_week, time_week, year) ) {
 					var text = "";
+
+					if (event_match.capture("activity_id") == "10965047673") {
+						console.log("--I'M GETTING FUCKED UP IN THE ASS OVER HERE--");
+						console.log(time_match, title_text);
+					}
 
 					$(day_timetable_element).find("span").each( function ( text_span_index, text_span_element ) {
 						text = text + " " + $(text_span_element).text().trim();
@@ -483,6 +515,8 @@ module.exports = {
 							});
 						break;
 					}
+				} else {
+					console.log("Day mismatch - what the fuck?", start_time, day_of_week, time_week, year);
 				}
 			} );
 		} );
@@ -500,8 +534,9 @@ module.exports = {
   			//console.log('The record has been deleted');
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
+						
 				Lectio_timetable.create(timetable_insert_element).exec(function createCB(err,created){
-	  				//console.log('Created event ' + created.activity_id);
+	  				console.log('Created event ' + created.activity_id);
 	  			});
 			});
 			if ( typeof callback == "function" ) {
