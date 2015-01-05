@@ -6,6 +6,7 @@
  */
 var ical = require('ical-generator');
 var moment = require('moment');
+var ObjectId = require('mongodb').ObjectID;
 
 function returnCalendar ( res, params, user ) {
 	Lectio_timetable.find({school_id: params.branch, user_id: params.section}).exec(function findCB(error,found){
@@ -41,8 +42,8 @@ function returnCalendar ( res, params, user ) {
 	});
 }
 
-function returnAssignmentCalendar ( res, params, user ) {
-	Lectio_assignments.find({user_id: params.section}).exec(function findCB(error,found){
+function returnAssignmentCalendar ( res, user_id, user ) {
+	Lectio_assignments.find({student_id: user_id}).exec(function findCB(error,found){
 		var cal = ical();
 		cal.setDomain('unical.illution.dk');
 
@@ -76,33 +77,59 @@ function returnAssignmentCalendar ( res, params, user ) {
 module.exports = {
 	assignments : function (req, res) {
 		var params = req.params;
-		Lectio_sections.find({user_id : params.section}).exec(function findCB(find_error, user){
-			if (  user.length == 0 ) {
-				Lectio_sections.create({school_id: params.branch, branch_id: params.branch_id, user_id: params.section, username: params.username, password: params.password}).exec(function createCB(createError, createResult) {
-					LectioUser.get(params.section, params.branch, function ( userResponse ){
-						LectioAssignments.get( params.branch, params.branch_id, params.section, params.username, params.password, function ( success ) {
-							console.log("User created, sending calendar after collect!");
-							returnAssignmentCalendar( res, params, userResponse);
-						} );
-					});
-				});
-			} else {
-				if ( ! user.hasOwnProperty("password") ) {
-					Lectio_sections.update({user_id : params.section},{branch_id: params.branch_id, user_id: params.section, username: params.username, password: params.password}).exec(function(err, users){});
-					user[0].password = params.password;
-					user[0].username = params.username;
-					user[0].branch_id = params.branch_id;
 
-					LectioAssignments.get( params.branch, params.branch_id, params.section, params.username, params.password, function ( success ) {
-						console.log("Updated user, collected and sending calendar");
-						returnAssignmentCalendar( res, params, user[0]);
-					} );
+		if ( params.hasOwnProperty("hash") ) {
+			Lectio_sections.find({id : String(params.hash)}).exec(function findCB(find_error, user){
+				if (  user.length == 0 ) {
+					res.send("Error, no user found!");
 				} else {
-					console.log("User exists, sending calendar!");
-					returnAssignmentCalendar( res, params, user[0] );
+					returnAssignmentCalendar( res, user[0]["user_id"], user[0] );
 				}
+			});
+		} else {
+			if ( ! params.section || ! params.branch_id || ! params.branch || ! params.password ) {
+				res.send("Error!");
+				return;
 			}
-		});
+
+			Lectio_sections.find({user_id : params.section}).exec(function findCB(find_error, user){
+				if (  user.length == 0 ) {
+					LectioAuthenticate.authenticate(params.branch, params.branch_id, params.username, params.password, function ( cookies ) {
+						if ( ! cookies ) {
+							res.send("Error!");
+							return;
+						} else {
+							Lectio_sections.create({school_id: params.branch, branch_id: params.branch_id, user_id: params.section, username: params.username, password: new Buffer(params.password).toString('base64')}).exec(function createCB(createError, createResult) {
+								LectioUser.get(params.section, params.branch, function ( userResponse ){
+									LectioAssignments.get( params.branch, params.branch_id, params.section, params.username, params.password, function ( success ) {
+										res.send(userResponse["id"]);
+									} );
+								});
+							});
+						}
+					});
+				} else {
+					if ( ! user.hasOwnProperty("password") ) {
+						LectioAuthenticate.authenticate(params.branch, params.branch_id, params.username, params.password, function ( cookies ) {
+							if ( ! cookies ) {
+								res.send("Error!");
+							} else {
+								Lectio_sections.update({user_id : params.section},{branch_id: params.branch_id, user_id: params.section, username: params.username, password: new Buffer(params.password).toString('base64')}).exec(function(err, users){});
+								user[0].password = params.password;
+								user[0].username = params.username;
+								user[0].branch_id = params.branch_id;
+
+								LectioAssignments.get( params.branch, params.branch_id, params.section, params.username, params.password, function ( success ) {
+									res.send(user[0]["id"]);
+								} );
+							}
+						});
+					} else {
+						res.send(user[0]["id"]);
+					}
+				}
+			});
+		}
 	},
 
 	timetable: function (req, res) {
@@ -154,11 +181,17 @@ module.exports = {
 					}
 				}
 
-				/*if ( user.indexOf("password") ) {
-					LectioAssignments.get( user['school_id'], user['branch_id'], user["user_id"], user["username"], user["password"]);
-				}*/
+				if ( Object(user).hasOwnProperty("password") ) {
+					console.log("Fetching User!");
+					LectioAssignments.get( user['school_id'], user['branch_id'], user["user_id"], user["username"], new Buffer(user["password"], 'base64').toString('ascii'), function ( status ) {
+						if ( status == false ) {
+							console.log("Error!");
+						} else {
+						}
+					});
+				}
 			});
-		return res.send("Working on it, bitch!")
+			return res.send("Working on it, bitch!")
 		});
 	}
 };

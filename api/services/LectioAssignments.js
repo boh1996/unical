@@ -16,6 +16,21 @@ function zero_padding ( string ) {
 	}
 }
 
+function construct_time (year, month, day, hour, minute) {
+	return moment.tz(
+		moment()
+		.zone("Frederiks Mor")
+		.year(year)
+		.month(month)
+		.date(day)
+		.hour(hour)
+		.minute(minute)
+		.second(0)
+		.format().split("+")[0],
+		"Europe/Copenhagen"
+	);
+}
+
 module.exports = {
 	construct_url : function ( school_id, student_id ) {
 		return "https://www.lectio.dk/lectio/" + school_id + "/OpgaverElev.aspx?elevid=" + student_id;
@@ -60,13 +75,15 @@ module.exports = {
 			return false;
 		}
 
+		console.log("Parsing data!");
+
 		var rows = $("#s_m_Content_Content_ExerciseGV").find("tr");
 
 		delete rows[0];
 
 		var assignments = [];
 
-		var pattern = /(.*)\/(.*)-(.*) (.*)/i;
+		var pattern = /(.*)\/(.*)-(.*) (.*):(.*)/i;
 
 
 		var student_time = 0.0;
@@ -76,8 +93,8 @@ module.exports = {
 			
 			if ( elements[3] != undefined ) {
 				var result = pattern.exec($(elements[3]).text().trim());
-				var start_time = moment.tz(result[3] + "-" + zero_padding(result[2]) + "-" + zero_padding(result[1]) + " " + result[4], "Europe/Copenhagen").toDate();
-				var event_start_time = moment(parseInt(start_time.format("X")) - ( parseFloat($(elements[4]).text().trim().replace(",", ".")) * 3600 )).toDate();
+				var start_time = construct_time(result[3], result[2], result[1], result[4], result[5] );
+				var event_start_time = moment(parseInt(start_time.format("X")) - ( parseFloat($(elements[4]).text().trim().replace(",", ".")) * 3600 ),"X").toDate();
 
 				assignments.push({
 					"student_note" : $(elements[10]).text().trim(),
@@ -87,12 +104,12 @@ module.exports = {
 					"leave" : $(elements[6]).text().trim(),
 					"status" : $(elements[5]).text().trim(),
 					"student_time" : parseFloat($(elements[4]).text().trim().replace(",", ".")),
-					"time" : start_time,
+					"time" : start_time.toDate(),
 					"event_start_time" : event_start_time,
 					"title" : $(elements[2]).text().trim(),
 					"team" : $(elements[1]).text().trim(),
 					"student_id" : String(student_id),
-					"url" : $(elements[3]).text().trim()
+					"url" : "https://www.lectio.dk" + $(elements[2]).find("a").attr("href")
 				});
 			}
 			if ( ! isNaN(parseFloat($(elements[4]).text().trim().replace(",", "."))) ) {
@@ -105,7 +122,9 @@ module.exports = {
 		Lectio_assignments.destroy({
 			"student_id" : String(student_id)
 		}).exec(function deleteCB(err){
-			console.log(err);
+			if ( err != null ) {
+				console.log(err);
+			}
   			console.log('The record has been deleted');
   			// Insert the new
 			assignments.forEach( function ( assignment_insert_element, assignment_insert_index ) {

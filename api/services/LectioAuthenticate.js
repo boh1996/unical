@@ -31,6 +31,7 @@ module.exports = {
 				var base = cheerio.load(body);
 
 				if ( base("#aspnetForm").length == 0 ) {
+					console.log("No form found!");
 					callback(false);
 					return false;
 				}
@@ -71,15 +72,18 @@ module.exports = {
 							if ( "LastLoginUserName" in cookies ) {
 								callback(j);
 							} else {
+								console.log("Wrong something!");
 								callback(false);
 							}
 						}
 					} else {
-						// Error...
+						console.log("Error while signing into Lectio!", response.statusCode);
+						callback(false);
 					}
 				});
 			} else {
-				// Error...
+				console.log("Error requesting Lectio!", response.statusCode);
+				callback(false);
 			}
 		});
 	}
