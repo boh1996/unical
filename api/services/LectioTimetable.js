@@ -298,7 +298,7 @@ module.exports = {
 				}
 
 				// Match the event times, from the text using regex
-				if ( time_match.length > 0 ) {
+				if ( time_match != null && time_match.length > 0 ) {
 
 					var start_time = moment.tz(
 						util.format('%s-W%s-%s %s:%s', 
@@ -330,39 +330,50 @@ module.exports = {
 					var end_time_section = 0;
 
 					if ( date_sections.length == 4 ) {
-						start_time_section = date_sections[0];
+						start_date_section = date_sections[0];
 						end_date_section = date_sections[0];
 
 						start_time_section = date_sections[1];
 						end_time_section = date_sections[3];
 					} else {
-						start_time_section = date_sections[0];
+						start_date_section = date_sections[0];
 						end_date_section = date_sections[3];
 
 						start_time_section = date_sections[1];
 						end_time_section = date_sections[4];
 					}
 
-					var alternative_start_day_match = alternative_day_regex.exec(start_date_section.trim());
-					var alternative_end_day_match = alternative_day_regex.exec(end_date_section.trim());
+					var end_day_text = String(end_date_section).replace("\r","").replace("\n","").replace("\t","").trim();
 
-					var start_time = moment.tz(
-						util.format('%s-%s-%s %s', 
-							alternative_start_day_match.capture("year"), 
-							zero_padding(alternative_start_day_match.capture("month")), 
-							zero_padding(alternative_start_day_match.capture("day")), 
-							start_time_section.trim()
-						), "Europe/Copenhagen" 
-					);
+					var alternative_start_day_match = alternative_day_regex.exec(String(start_date_section).trim());
+					var alternative_end_day_match = alternative_day_regex.exec(end_day_text);
 
-					var end_time = moment.tz(
-						util.format('%s-%s-%s %s', 
-							alternative_end_day_match.capture("year"), 
-							zero_padding(alternative_end_day_match.capture("month")), 
-							zero_padding(alternative_end_day_match.capture("day")), 
-							end_time_section.trim()
-						), "Europe/Copenhagen" 
-					);
+					if ( alternative_end_day_match == null ) {
+						alternative_end_day_match = alternative_day_regex.exec(end_day_text);
+					}
+
+
+					if ( alternative_start_day_match != null ) {
+						var start_time = moment.tz(
+							util.format('%s-%s-%s %s', 
+								alternative_start_day_match.capture("year"), 
+								zero_padding(alternative_start_day_match.capture("month")), 
+								zero_padding(alternative_start_day_match.capture("day")), 
+								start_time_section.trim()
+							), "Europe/Copenhagen" 
+						);
+					}
+
+					if ( alternative_end_day_match != null ) {
+						var end_time = moment.tz(
+							util.format('%s-%s-%s %s', 
+								alternative_end_day_match.capture("year"), 
+								zero_padding(alternative_end_day_match.capture("month")), 
+								zero_padding(alternative_end_day_match.capture("day")), 
+								end_time_section.trim()
+							), "Europe/Copenhagen" 
+						);
+					}
 				}
 
 				var room_text = "";
@@ -373,8 +384,13 @@ module.exports = {
 					var room = top_section[3 + is_changed_or_cancelled].replace("Lokale: ", "").replace("r:", "");
 				}
 
-				start_time = start_time.toDate();
-				end_time = end_time.toDate();
+				if ( start_time != null ) {
+					start_time = start_time.toDate();
+				}
+
+				if ( end_time != null ) {
+					end_time = end_time.toDate();
+				}
 
 				// Only insert if the current day is the events starting day
 				if ( same_day(start_time, day_of_week, time_week, year) ) {
@@ -478,12 +494,14 @@ module.exports = {
 			"user_id" : user_id,
 			"school_id" : school_id
 		}).exec(function deleteCB(err){
-			console.log(err);
-  			console.log('The record has been deleted');
+			if ( err != null ) {
+				console.log(err);
+			}
+  			//console.log('The record has been deleted');
   			// Insert the new
 			timetable_elements.forEach( function ( timetable_insert_element, timetable_element_index ) {
 				Lectio_timetable.create(timetable_insert_element).exec(function createCB(err,created){
-	  				console.log('Created event ' + created.activity_id);
+	  				//console.log('Created event ' + created.activity_id);
 	  			});
 			});
 			if ( typeof callback == "function" ) {

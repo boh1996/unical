@@ -146,17 +146,17 @@ module.exports = {
 		var now = moment(Date.now());
 		Lectio_sections.find().exec(function findCB(find_error, users){
 			users.forEach(function (user, index) {
-				/*var current_week = parseInt(now.format("ww"));
+				var current_week = parseInt(now.format("ww"));
 				for (var week = current_week; week <= current_week + 4; week++) {
 					if (week <= 52) {
-						console.log("Running the shizzle for " + user['school_id'] + "/" + user['user_id'] + " in " + now.format("YYYY") + ":" + String(week));
+						//console.log("Running the shizzle for " + user['school_id'] + "/" + user['user_id'] + " in " + now.format("YYYY") + ":" + String(week));
 						LectioTimetable.get(user['school_id'], user['user_id'], now.format("YYYY"), String(week));
 					}
-				}*/
-
-				if ( user.indexOf("password") ) {
-					LectioAssignments.get( user['school_id'], user['branch_id'], user["user_id"], user["username"], user["password"]);
 				}
+
+				/*if ( user.indexOf("password") ) {
+					LectioAssignments.get( user['school_id'], user['branch_id'], user["user_id"], user["username"], user["password"]);
+				}*/
 			});
 		return res.send("Working on it, bitch!")
 		});
