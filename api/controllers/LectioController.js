@@ -77,6 +77,29 @@ function returnAssignmentCalendar ( res, user_id, user ) {
 }
 
 module.exports = {
+	change_password : function (req, res) {
+		var params = req.params;
+
+		if ( params.hasOwnProperty("hash") ) {
+			Lectio_sections.find({id : String(params.hash)}).exec(function findCB(find_error, user){
+				if (  user.length == 0 ) {
+					res.send("Error, no user found!");
+				} else {
+					Lectio_sections.update({id : String(params.hash)},{password: new Buffer(params.password).toString('base64')}).exec(function(err, users){});
+					Lectio_sections.find({id : String(params.hash)}).exec(function findCB(find_error, user){
+						if (  user.length == 0 ) {
+							res.send("Status can't be checked!");
+						} else {
+							res.send("Password changed to a password starting with:" + new Buffer(user[0]["password"], 'base64').toString('ascii').substring(0, 3));
+						}
+					});
+				}
+			});
+		} else {
+			res.send("Error!");
+		}
+	},
+
 	assignments : function (req, res) {
 		var params = req.params;
 

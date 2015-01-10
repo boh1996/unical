@@ -33,8 +33,9 @@ module.exports.routes = {
   ***************************************************************************/
 
   '/': {
-    view: 'homepage'
+	view: 'homepage'
   },
+  'get /lectio/assignments/:hash/password/:password': 'LectioController.change_password',
   'get /lectio/assignments/:hash': 'LectioController.assignments',
   'get /lectio/assignments/:branch/:branch_id/:section/:username/:password' : 'LectioController.assignments',
   'get /lectio/:branch/:section/:year': 'LectioController.timetable',
