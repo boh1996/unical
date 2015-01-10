@@ -93,7 +93,7 @@ module.exports = {
 			
 			if ( elements[3] != undefined ) {
 				var result = pattern.exec($(elements[3]).text().trim());
-				var start_time = construct_time(result[3], result[2], result[1], result[4], result[5] );
+				var start_time = construct_time(zero_padding(result[3]), zero_padding(result[2]), zero_padding(result[1]), result[4], result[5] );
 				var event_start_time = moment(parseInt(start_time.format("X")) - ( parseFloat($(elements[4]).text().trim().replace(",", ".")) * 3600 ),"X").toDate();
 
 				assignments.push({
