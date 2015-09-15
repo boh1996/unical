@@ -5,14 +5,14 @@ var util = require('util');
 var tough = require('tough-cookie');
 
 function parseCookies (rc) {
-    var list = {};
+	var list = {};
 
-    rc && rc.split(';').forEach(function( cookie ) {
-        var parts = cookie.split('=');
-        list[parts.shift().trim()] = unescape(parts.join('='));
-    });
+	rc && rc.split(';').forEach(function( cookie ) {
+		var parts = cookie.split('=');
+		list[parts.shift().trim()] = unescape(parts.join('='));
+	});
 
-    return list;
+	return list;
 }
 
 
@@ -58,10 +58,12 @@ module.exports = {
 					headers : {
 						"User-Agent" : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/534.57.2 (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
 						"Content-Type" : "application/x-www-form-urlencoded",
-				        "Referer" : url,
-				        "Host" : "www.lectio.dk",
-				        "Origin" : "https://www.lectio.dk",
-				        "Accept" : "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+						"Referer" : url,
+						"Host" : "www.lectio.dk",
+						"Origin" : "https://www.lectio.dk",
+						"Accept" : "/*",
+						"CSP" : "active",
+						"Accept-Encoding" : "gzip, deflate"
 					},
 					allowRedirect : false,
 					followRedirect : false

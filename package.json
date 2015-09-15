@@ -41,5 +41,8 @@
     "url": "https://github.com/boh1996/unical.git"
   },
   "author": "Illution",
-  "license": "MIT License"
+  "license": "MIT License",
+  "devDependencies": {
+    "socks5-https-client": "^1.1.1"
+  }
 }

@@ -104,7 +104,7 @@ module.exports = {
 		// Expressions used to indentify the event type
 		var event_expressions = [
 			{"type" : "private", "expression" : regex(/\/lectio\/(:<school_id>[0-9]*)\/privat_aftale.aspx\?aftaleid=(:<activity_id>[0-9]*)/ig)},
-			{"type" : "school",  "expression" : regex(/\/lectio\/(:<school_id>[0-9]*)\/aktivitet\/aktivitetinfo.aspx\?id=(:<activity_id>[0-9]*)&(:<prev_url>.*)/ig)},
+			{"type" : "school",  "expression" : regex(/\/lectio\/(:<school_id>[0-9]*)\/aktivitet\/aktivitetforside.aspx\?absid=(:<activity_id>[0-9]*)&(:<prev_url>.*)/ig)},
 			{"type" : "outgoing_censor", "expression" : regex(/\/lectio\/(:<school_id>.*)\/proevehold.aspx\?type=udgcensur&outboundCensorID=(:<outbound_censor_id>.*)&prevurl=(:<prev_url>.*)/ig)},
 			{"type" : "exam", "expression" : regex(/\/lectio\/(:<school_id>.*)\/proevehold.aspx\?type=proevehold&ProeveholdId=(:<test_team_id>.*)&prevurl=(:<prev_url>.*)/ig)}
 		];
@@ -227,7 +227,7 @@ module.exports = {
 			}*/
 
 			//
-			var day_timetable_elements = day.find("a");
+			var day_timetable_elements = day.find("a.s2skemabrik");
 
 			module_index = 1;
 
@@ -246,7 +246,6 @@ module.exports = {
 
 			// Timetable Elements
 			$(day_timetable_elements).each( function ( timetable_index, day_timetable_element ) {
-
 				day_timetable_element = $(day_timetable_element)
 
 				// Find event type
@@ -300,6 +299,10 @@ module.exports = {
 
 				// Store the titletext, where start and end times can be extracted from
 				var title_text = day_timetable_element.attr("title");
+
+				if ( title_text == null || title_text == undefined ) {
+					title_text = day_timetable_element.attr("rel");
+				}
 				
 				var time_match = time_regex.exec(title_text);
 
@@ -423,11 +426,6 @@ module.exports = {
 				if ( same_day(start_time, day_of_week, time_week, year) ) {
 					var text = "";
 
-					if (event_match.capture("activity_id") == "10965047673") {
-						console.log("--I'M GETTING FUCKED UP IN THE ASS OVER HERE--");
-						console.log(time_match, title_text);
-					}
-
 					$(day_timetable_element).find("span").each( function ( text_span_index, text_span_element ) {
 						text = text + " " + $(text_span_element).text().trim();
 					} );
@@ -511,7 +509,7 @@ module.exports = {
 								"week" : week,
 								"year" : year,
 								"user_id" : user_id,
-								"url" : "https://www.lectio.dk/lectio/" + school_id + "/aktivitet/aktivitetinfo.aspx?id=" + event_match.capture("activity_id")
+								"url" : "https://www.lectio.dk/lectio/" + school_id + "/aktivitet/aktivitetforside.aspx?absid=" + event_match.capture("activity_id")
 							});
 						break;
 					}
